@@ -1,0 +1,25 @@
+{
+  "name": "wallwelove-server",
+  "version": "1.0.0",
+  "description": "Wall we love server",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@heroku.com:wallwelove-server.git"
+  },
+  "keywords": [
+    "Wall",
+    "we",
+    "love"
+  ],
+  "author": "Jordan Van Walleghem <j.vanwall@gmail.com>",
+  "dependencies": {
+    "bcrypt": "^0.8.3",
+    "bluebird": "^2.9.25",
+    "koa": "^0.20.0",
+    "sequelize": "^3.0.0"
+  }
+}
