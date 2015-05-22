@@ -49,7 +49,13 @@ app.use(function *(next) {
     }
 });
 
+app.use(function *(next) {
+    yield next;
+    console.log(this.response.headers);
+});
+
 app.use(cors());
+
 
 app.use(router(app));
 
