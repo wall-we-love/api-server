@@ -51,7 +51,7 @@ app.use(function *(next) {
 
 app.use(function *(next) {
     yield next;
-    console.log(this.response.headers);
+    this.response.headers['access-control-allow-headers']= '*';
 });
 
 app.use(cors());
