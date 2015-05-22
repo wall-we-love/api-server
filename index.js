@@ -51,6 +51,7 @@ app.use(function *(next) {
 
 app.use(function *(next) {
     yield next;
+    console.log(this.request.headers);
     this.response.headers['access-control-allow-headers']= this.request.headers['access-control-request-headers'];
 });
 
