@@ -7,6 +7,7 @@ var path        = require('path');
 var router      = require('koa-router');
 var koaBody     = require('koa-body');
 var koa         = require('koa');
+var cors        = require('koa-cors');
 var Promise     = require('bluebird');
 var fs          = Promise.promisifyAll(require('fs'));
 var Joi         = Promise.promisifyAll(require('joi'));
@@ -47,6 +48,8 @@ app.use(function *(next) {
         }
     }
 });
+
+app.use(cors());
 
 app.use(router(app));
 
