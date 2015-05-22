@@ -89,7 +89,7 @@ app.post('/user/register/email',
 );
 
 function *emailLogin(next) {
-    yield Joi.validateAsync(this.headers['Authorization'], Joi.string().required);
+    if (!this.headers['Authorization']) return this.throw(400);
 
     let headerTokenValueEnc = this.headers['Authorization'].substr(5);
     if (!headerTokenValueEnc) return this.throw(400);
