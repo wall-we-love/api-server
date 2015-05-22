@@ -9,6 +9,7 @@ var koaBody     = require('koa-body');
 var koa         = require('koa');
 var cors        = require('koa-cors');
 var Promise     = require('bluebird');
+var bcrypt      = Promise.promisifyAll(require('bcrypt'));
 var fs          = Promise.promisifyAll(require('fs'));
 var Joi         = Promise.promisifyAll(require('joi'));
 var send        = require('koa-send');
@@ -51,8 +52,7 @@ app.use(function *(next) {
 
 app.use(function *(next) {
     yield next;
-    console.log(this.request.headers);
-    this.response.headers['access-control-allow-headers']= this.request.headers['access-control-request-headers'];
+    this.response.headers['access-control-allow-headers'] = this.request.headers['access-control-request-headers'];
 });
 
 app.use(cors());
@@ -78,7 +78,10 @@ app.post('/user/register/email',
     function *(next) {
 
         try {
-            let user = yield models.User.create(this.request.body);
+            let user = yield models.User.create({
+                email: this.request.body.email,
+                password: yield bcrypt.hashAsync(this.request.body.password, 12)
+            });
             this.body = user.get();
 
             this.status = 201;
@@ -96,21 +99,24 @@ app.post('/user/register/email',
 );
 
 function *emailLogin(next) {
-    if (!this.headers['Authorization']) return this.throw(400);
+    if (!this.headers['authorization']) return this.throw(400);
 
-    let headerTokenValueEnc = this.headers['Authorization'].substr(5);
-    if (!headerTokenValueEnc) return this.throw(400);
+    let headerTokenValueEnc = this.headers['authorization'].substr(5);
+    this.assert(headerTokenValueEnc, 400, 'Token bad format (1)');
 
     let headerTokenValue = new Buffer(headerTokenValueEnc, 'base64').toString();
 
     let passwordStartPosition = headerTokenValue.indexOf(':');
-    if (passwordStartPosition <= 0) return this.throw(400);
+    this.assert(passwordStartPosition > 0, 400, 'Token bad format (2)');
 
     let email = headerTokenValue.substr(0, passwordStartPosition);
     let password = headerTokenValue.substr(passwordStartPosition + 1);
 
-    let user = this.state.user = yield models.user.findOne({ where: { email: email, password: password } });
-    if (!user) return this.throw(401);
+    let user = this.state.user = yield models.User.findOne({ where: { email: email } });
+    this.assert(user, 401, 'No such user (1)');
+
+    let validPassword = bcrypt.compareAsync(password, user.password);
+    this.assert(validPassword, 401, 'Bad password');
 
     yield next;
 }
@@ -212,6 +218,16 @@ app.post('/posters',
             transaction.rollback();
             throw e;
         }
+
+        yield next;
+    }
+);
+
+app.get('/me',
+    tokenLogin,
+    function *(next) {
+        this.body = this.state.user.get();
+        this.status = 200;
 
         yield next;
     }
