@@ -10,9 +10,7 @@ var koa         = require('koa');
 var cors        = require('koa-cors');
 var Promise     = require('bluebird');
 var bcrypt      = Promise.promisifyAll(require('bcrypt'));
-var fs          = Promise.promisifyAll(require('fs'));
 var Joi         = Promise.promisifyAll(require('joi'));
-var send        = require('koa-send');
 
 var models  = require('./models');
 
@@ -122,9 +120,9 @@ function *emailLogin(next) {
 }
 
 function *tokenLogin(next) {
-    yield Joi.validateAsync(this.headers['Authorization'], Joi.string().required);
+    this.assert(this.headers['authorization'], 400, 'Missing auth token');
 
-    let headerTokenValue = this.headers['Authorization'].substr(6);
+    let headerTokenValue = this.headers['authorization'].substr(7);
     if (!headerTokenValue) return this.throw(400);
 
     let authToken = this.state.authToken = yield models.AuthToken.findOne({ where: { value: headerTokenValue } });
@@ -187,29 +185,29 @@ app.get('/posters/:posterId/file',
 
         if (!poster) return this.throw(404);
 
-        yield send(this, poster.id, { root: process.env.UPLOAD_DIR });
+        this.body = poster.get();
         yield next;
     }
 );
 
 app.post('/posters',
     tokenLogin,
-    koaBody({ multipart: true }),
+    koaBody(),
     function *(next) {
 
         let transaction = yield models.sequelize.transaction();
 
         try {
-
-            let tmpFile = this.request.body.files[Object.keys(this.request.body.files)[0]];
             let poster = yield models.Poster.create({
                 name: this.request.body.name,
                 description: this.request.body.description,
                 pos_x: this.request.body.pos_x,
                 pos_y: this.request.body.pos_y,
+                width: this.request.body.width,
+                height: this.request.body.height,
+                fileData: this.request.body.fileData,
                 userId: this.state.user.id
             });
-            yield fs.renameAsync(tmpFile.path, path.join(process.env.UPLOAD_DIR, poster.id));
             transaction.commit();
             this.body = poster.get();
             this.status = 201;

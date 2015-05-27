@@ -31,9 +31,13 @@ var Poster = exports.Poster = sequelize.define('poster', {
         allowNull: false
     },
     name: Sequelize.STRING,
+    fileData: Sequelize.TEXT,
     description: Sequelize.STRING,
     pos_x: Sequelize.INTEGER,
-    pos_y: Sequelize.INTEGER
+    pos_y: Sequelize.INTEGER,
+    width: Sequelize.INTEGER,
+    height: Sequelize.INTEGER
+
 });
 
 var AuthToken = exports.AuthToken = sequelize.define('auth-token', {
