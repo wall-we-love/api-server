@@ -5,6 +5,8 @@
 
 var path        = require('path');
 var router      = require('koa-router');
+var crypto      = require('crypto');
+var request     = require('request-promise');
 var koaBody     = require('koa-body');
 var koa         = require('koa');
 var cors        = require('koa-cors');
@@ -119,6 +121,44 @@ function *emailLogin(next) {
     yield next;
 }
 
+function *facebookLogin(next) {
+    this.assert(this.request.body.access_token, 400, 'Access token required');
+    let transaction = yield models.sequelize.transaction();
+
+    try {
+        console.log(1);
+        let appsecret_proof = crypto.createHmac('sha256', process.env.FACEBOOK_APP_SECRET).update(this.request.body.access_token).digest('hex');
+        console.log(2);
+        let facebookRequest = yield request('https://graph.facebook.com/me?access_token=' + this.request.body.access_token + '&appsecret_proof=' + appsecret_proof);
+        console.log(3);
+        let facebookProfile = JSON.parse(facebookRequest);
+        console.log(4);
+        let user = yield models.User.findOne({ where: models.Sequelize.or({ email: facebookProfile.email }, { facebookId: facebookProfile.id }), transaction: transaction });
+        console.log(5);
+
+        if (!user) {
+            user = yield models.User.create({
+                email: facebookProfile.email,
+                facebookId: facebookProfile.id
+            }, { transaction: transaction });
+            user.created = true;
+        } else {
+            user.email = facebookProfile.email;
+            user.facebookId = facebookProfile.id;
+            user = yield user.save();
+        }
+
+        this.state.user = user;
+        transaction.commit();
+        yield next;
+
+    } catch (e) {
+        console.log(e.stack);
+        transaction.rollback();
+        return this.throw(401, 'Bad access token');
+    }
+}
+
 function *tokenLogin(next) {
     this.assert(this.headers['authorization'], 400, 'Missing auth token');
 
@@ -143,6 +183,12 @@ function *issueToken(next) {
 
 app.post('/user/token/email',
     emailLogin,
+    issueToken
+);
+
+app.post('/user/token/facebook',
+    koaBody(),
+    facebookLogin,
     issueToken
 );
 
