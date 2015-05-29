@@ -196,7 +196,7 @@ app.get('/posters',
     function *(next) {
 
         this.body = yield models.Poster.findAll({
-            attributes: ['id', 'pos_x', 'pos_y']
+            attributes: ['id', 'pos_x', 'pos_y', 'tags']
         });
 
         this.status = 200;
@@ -243,15 +243,17 @@ app.post('/posters',
 
         let transaction = yield models.sequelize.transaction();
 
+        console.log(this.request.body);
+
         try {
             let poster = yield models.Poster.create({
-                name: this.request.body.name,
                 description: this.request.body.description,
                 pos_x: this.request.body.pos_x,
                 pos_y: this.request.body.pos_y,
                 width: this.request.body.width,
                 height: this.request.body.height,
                 fileData: this.request.body.fileData,
+                tags: this.request.body.tags,
                 userId: this.state.user.id
             });
             transaction.commit();
