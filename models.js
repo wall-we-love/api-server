@@ -30,13 +30,15 @@ var Poster = exports.Poster = sequelize.define('poster', {
         defaultValue: Sequelize.UUIDV4,
         allowNull: false
     },
+    name: Sequelize.STRING,
     fileData: Sequelize.TEXT,
     description: Sequelize.STRING,
     tags: Sequelize.STRING,
     pos_x: Sequelize.INTEGER,
     pos_y: Sequelize.INTEGER,
     width: Sequelize.INTEGER,
-    height: Sequelize.INTEGER
+    height: Sequelize.INTEGER,
+    link: Sequelize.STRING
 
 });
 

@@ -126,15 +126,10 @@ function *facebookLogin(next) {
     let transaction = yield models.sequelize.transaction();
 
     try {
-        console.log(1);
         let appsecret_proof = crypto.createHmac('sha256', process.env.FACEBOOK_APP_SECRET).update(this.request.body.access_token).digest('hex');
-        console.log(2);
         let facebookRequest = yield request('https://graph.facebook.com/me?access_token=' + this.request.body.access_token + '&appsecret_proof=' + appsecret_proof);
-        console.log(3);
         let facebookProfile = JSON.parse(facebookRequest);
-        console.log(4);
         let user = yield models.User.findOne({ where: models.Sequelize.or({ email: facebookProfile.email }, { facebookId: facebookProfile.id }), transaction: transaction });
-        console.log(5);
 
         if (!user) {
             user = yield models.User.create({
@@ -153,7 +148,6 @@ function *facebookLogin(next) {
         yield next;
 
     } catch (e) {
-        console.log(e.stack);
         transaction.rollback();
         return this.throw(401, 'Bad access token');
     }
@@ -223,39 +217,17 @@ app.get('/posters/:posterId',
     }
 );
 
-app.get('/posters/:posterId/file',
-    function *(next) {
-        let poster = yield models.Poster.findOne({
-            where: { id: this.params.posterId }
-        });
-
-        if (!poster) return this.throw(404);
-
-        this.body = poster.get();
-        yield next;
-    }
-);
-
 app.post('/posters',
     tokenLogin,
     koaBody(),
     function *(next) {
-
         let transaction = yield models.sequelize.transaction();
 
-        console.log(this.request.body);
-
         try {
-            let poster = yield models.Poster.create({
-                description: this.request.body.description,
-                pos_x: this.request.body.pos_x,
-                pos_y: this.request.body.pos_y,
-                width: this.request.body.width,
-                height: this.request.body.height,
-                fileData: this.request.body.fileData,
-                tags: this.request.body.tags,
-                userId: this.state.user.id
-            });
+            let posterData = this.request.body;
+            posterData.userId = this.state.user.id;
+
+            let poster = yield models.Poster.create(posterData);
             transaction.commit();
             this.body = poster.get();
             this.status = 201;
@@ -274,6 +246,21 @@ app.get('/me',
     function *(next) {
         this.body = this.state.user.get();
         this.status = 200;
+
+        yield next;
+    }
+);
+
+app.get('/user/:userId',
+    function *(next) {
+        let user = yield models.User.findOne({
+            where: { id: this.params.userId },
+            attributes: ['id']
+        });
+
+        this.assert(user, 400);
+
+        this.body = user.get();
 
         yield next;
     }
