@@ -32,7 +32,7 @@ var Poster = exports.Poster = sequelize.define('poster', {
     },
     name: Sequelize.STRING,
     fileData: Sequelize.TEXT,
-    description: Sequelize.STRING,
+    description: Sequelize.TEXT,
     tags: Sequelize.STRING,
     pos_x: Sequelize.INTEGER,
     pos_y: Sequelize.INTEGER,
